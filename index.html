@@ -9269,6 +9269,11 @@ function checkData() {
       best: d.best
     });
   });
+  if (S.blocks.weight && S.blocks.weight.on && String(Lot.weight || '').trim() && !/\d\s*(?:г|кг|мл|л|g|kg|ml|cl|l)(?![\w\u0400-\u04ff])/i.test(Lot.weight)) problems.push({
+    kind: 'law',
+    what: 'net quantity has no unit (g, kg)',
+    value: Lot.weight
+  });
   if (onBase) problems.push({
     kind: 'law',
     what: 'fixed info moved to base · not verified',
