@@ -2334,6 +2334,14 @@ function dateProblems() {
     roast: rawR,
     best: rawB
   });
+  if (r && b && (Lot.bestPrec === 'month' || b.d === null)) {
+    var lim = new Date(r.y, r.m - 1 + 3, r.d || 1), end = new Date(b.y, b.d === null || b.d >= new Date(b.y, b.m, 0).getDate() ? b.m : b.m - 1, 0);
+    if (end <= lim) out.push({
+      what: 'best before needs a day: shelf life is 3 months or less',
+      roast: rawR,
+      best: rawB
+    });
+  }
   return out;
 }
 
