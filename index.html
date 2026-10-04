@@ -8165,7 +8165,7 @@ function apply(what) {
   if (/^(label|piece|info|ui|base\.custom)/.test(what || '')) {
     if (typeof buildOut === 'function') buildOut();
   }
-  if (what === 'layout.mode') {
+  if (what === 'layout.mode' || what === 'info.law') {
     buildPanel();
   }
   if (what === 'size.pack') {
@@ -9148,7 +9148,7 @@ function buildPanel() {
       d.innerHTML = 'Free area of the base <b>' + gm.bodyW.toFixed(1) + ' × ' + gm.fieldH.toFixed(1) + '</b> mm · ' + 'layout ' + st.w + ' × ' + st.h + '<br>Label margins: left <b>' + f.left.toFixed(1) + '</b> · right <b>' + f.right.toFixed(1) + '</b> · top <b>' + f.top.toFixed(1) + '</b> · bottom <b>' + f.bot.toFixed(1) + '</b> mm' + (f.clampX || f.clampY ? '<br><b style="color:#8a6412">offset hits the edge of the free area: ' + (f.clampX ? 'horizontally by ' + Math.abs(f.clampX).toFixed(1) + ' mm' : '') + (f.clampX && f.clampY ? ' · ' : '') + (f.clampY ? 'vertically by ' + Math.abs(f.clampY).toFixed(1) + ' mm' : '') + ': any further and the label would cover the mark</b>' : '') + (f.ok ? '' : ' · <b style="color:#b0482a">does not fit: see the reason in Checks</b>');
     });
     return d;
-  }(), foldHint('The label is always <b>black and white</b>: a thermal head can only burn paper, it has no ink. Color lives on the base, printed separately and once.'), row('Fixed info · on base', mkTog('info.legalOnBase'), 'Producer, address, storage and website are printed on the base, not on every label'), row('℮ mark on the pack', mkTog('info.emark'), 'Packs with ℮ have their own minimum height for net weight digits: 4 mm for 200 g – 1 kg (' + lawBasis('emark') + ')'), studio() ? row('Bleed', mkScrub('size.bleed', 0, 6, .5, 'mm'), 'Standard at European digital print shops: 2 mm') : null, studio() ? row('Safe zone', mkScrub('size.safe', 0, 8, .5, 'mm'), 'Technical cut tolerance. Converter standard is 1.5–2 mm') : null ]));
+  }(), foldHint('The label is always <b>black and white</b>: a thermal head can only burn paper, it has no ink. Color lives on the base, printed separately and once.'), row('Fixed info · on base', mkTog('info.legalOnBase'), 'Producer, address, storage and website are printed on the base, not on every label'), row('Law profile', mkSeg('info.law', [ [ 'eu', 'EU 1169/2011' ], [ 'eu_ua', 'EU + Ukraine' ] ]), 'Which rules the checks apply. EU 1169/2011: the EU food information regulation, plus the EU lot code and ℮ directives it relies on. EU + Ukraine adds Law 2639-VIII (the lot name is required, articles cited by the Ukrainian law) and the DSTU 4518 name size check. Every check names the article it rests on'), row('℮ mark on the pack', mkTog('info.emark'), 'Packs with ℮ have their own minimum height for net weight digits: 4 mm for 200 g – 1 kg (' + lawBasis('emark') + ')'), studio() ? row('Bleed', mkScrub('size.bleed', 0, 6, .5, 'mm'), 'Standard at European digital print shops: 2 mm') : null, studio() ? row('Safe zone', mkScrub('size.safe', 0, 8, .5, 'mm'), 'Technical cut tolerance. Converter standard is 1.5–2 mm') : null ]));
   g.appendChild(group('Pack', 'two packs side by side: 250 and 500 g', [ row('Norm from pack', mkSeg('size.pack', PACKS.map(function(p) {
     return [ p.id, p.name ];
   })), 'Both packs are always on stage. This control sets which one the legal type-size allowance is counted from and whose margins the hints show'), row('Material', mkSeg('bag.material', MATERIAL.map(function(x) {
