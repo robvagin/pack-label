@@ -6739,7 +6739,7 @@ function solutionCandidates() {
   var optional = [ 'note', 'site', 'method', 'grind', 'notes', 'scales' ].filter(function(id) {
     return S.blocks[id] && S.blocks[id].on && protectedIds.indexOf(id) < 0;
   });
-  var out = [], scales = [ 100, 106, 110, 120, 130, 140 ];
+  var out = [], scales = [ 100, 106, 110, 114, 116, 120, 126, 130, 140 ];
   scales.forEach(function(p) {
     if (p !== S.type.scalePct) out.push({
       scale: p
