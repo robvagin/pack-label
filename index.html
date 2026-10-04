@@ -9779,7 +9779,7 @@ $$('#segUik button').forEach(function(b) {
   b.onclick = function() {
     S.ui.k = +b.dataset.uik;
     applyUiK();
-    save();
+    autosave();
     draw();
   };
 });
@@ -9811,7 +9811,7 @@ function syncTypeScale() {
   if (!r) return;
   r.querySelector('button').onclick = function() {
     S.rnd.galSeed = ((S.rnd.galSeed | 0) + 1) % 9973;
-    save();
+    autosave();
     draw();
   };
 })();
