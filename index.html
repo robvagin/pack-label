@@ -8379,7 +8379,7 @@ function sheetPlan() {
   if (!sg) return null;
   var cols = sg.cols, rows = sg.rows, A4W = 210, A4H = 297;
   var mx = sg.x0, my = sg.y0;
-  var m = S.info.thermal ? 0 : S.info.printMargin || 0, cells = [], skipped = 0, r, c;
+  var m = S.info.printMargin || 0, cells = [], skipped = 0, r, c;
   for (r = 0; r < rows; r++) for (c = 0; c < cols; c++) {
     var x = mx + c * (st.w + sg.gapX), y = my + r * (st.h + sg.gapY);
     var t0 = y + S.label.pad.t, t1 = y + st.h - S.label.pad.b;
@@ -9203,7 +9203,7 @@ function buildOut() {
   }(), stateLine(function() {
     var st2 = stockById(S.label.preset), pl = sheetPlan();
     return pl ? sheetName(st2) + ' = ' + pl.cols * pl.rows + (pl.skipped ? ' · printing ' + pl.good : ' · all within the printable area') : 'roll · no sheet';
-  }), S.info.thermal ? null : row('Edge rows', mkTog('info.skipEdge'), 'Stock sheets are die cut right to the edge, but the printer skips 4–5 mm around the perimeter: edge cells lose the legal name and date. Better 16 good labels out of 20 than 20 with defects'), studio() ? row('Printer margin', mkScrub('info.printMargin', 0, 10, .5, 'mm'), 'Unpredictable strip around the edges. On most office laser printers it is 4.2–5 mm; check «minimum margins» in the driver') : null, S.info.thermal ? null : mkAct('Fit side margins to printer', function() {
+  }), row('Edge rows', mkTog('info.skipEdge'), 'Stock sheets are die cut right to the edge, but the printer skips 4–5 mm around the perimeter: edge cells lose the legal name and date. Better 16 good labels out of 20 than 20 with defects'), studio() ? row('Printer margin', mkScrub('info.printMargin', 0, 10, .5, 'mm'), 'Unpredictable strip around the edges. On most office laser printers it is 4.2–5 mm; check «minimum margins» in the driver') : null, mkAct('Fit side margins to printer', function() {
     var pl = sheetPlan();
     if (!pl) {
       toast('This layout comes on a roll · laser printer margins do not apply');
