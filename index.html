@@ -8276,6 +8276,39 @@ function expPrinter(kind) {
   });
 }
 
+var CRC_T = null;
+
+function pngDpi(blob, ppi, cb) {
+  if (!CRC_T) {
+    CRC_T = [];
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+      CRC_T[n] = c >>> 0;
+    }
+  }
+  blob.arrayBuffer().then(function(ab) {
+    var src = new Uint8Array(ab), ppm = Math.round(ppi / .0254), ch = new Uint8Array(21), dv = new DataView(ch.buffer);
+    dv.setUint32(0, 9);
+    ch.set([ 112, 72, 89, 115 ], 4);
+    dv.setUint32(8, ppm);
+    dv.setUint32(12, ppm);
+    ch[16] = 1;
+    var crc = 4294967295;
+    for (var i = 4; i < 17; i++) crc = CRC_T[(crc ^ ch[i]) & 255] ^ crc >>> 8;
+    dv.setUint32(17, (crc ^ 4294967295) >>> 0);
+    var out = new Uint8Array(src.length + 21);
+    out.set(src.subarray(0, 33), 0);
+    out.set(ch, 33);
+    out.set(src.subarray(33), 54);
+    cb(new Blob([ out ], {
+      type: 'image/png'
+    }));
+  }, function() {
+    cb(blob);
+  });
+}
+
 function expPng(ppi) {
   ppi = ppi || 300;
   pngCanvas(ppi, function(c, oneBit) {
@@ -8283,7 +8316,8 @@ function expPng(ppi) {
       toast('Could not rasterize');
       return;
     }
-    c.toBlob(function(b) {
+    c.toBlob(function(b0) {
+      pngDpi(b0, ppi, function(b) {
       var a = document.createElement('a');
       a.href = URL.createObjectURL(b);
       a.download = baseName() + '-' + ppi + 'ppi' + (oneBit ? '-1bit' : '') + '.png';
@@ -8292,6 +8326,7 @@ function expPng(ppi) {
         URL.revokeObjectURL(a.href);
       }, 400);
       toast((isLabel() ? 'Label' : 'Base') + ' · PNG ' + ppi + (oneBit ? ' · 1-bit' : '') + ' saved');
+      });
     });
   });
 }
@@ -8409,7 +8444,8 @@ function expSheetPng(ppi) {
     x.fillStyle = '#fff';
     x.fillRect(0, 0, px, py);
     x.drawImage(im, 0, 0, px, py);
-    c.toBlob(function(b) {
+    c.toBlob(function(b0) {
+      pngDpi(b0, ppi, function(b) {
       var a = document.createElement('a');
       a.href = URL.createObjectURL(b);
       a.download = baseName() + '-a4-' + ppi + 'ppi.png';
@@ -8418,6 +8454,7 @@ function expSheetPng(ppi) {
         URL.revokeObjectURL(a.href);
       }, 400);
       toast('A4 sheet · PNG ' + ppi + ' ppi');
+      });
     });
   };
   im.onerror = function() {
