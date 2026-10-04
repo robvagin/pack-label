@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="140mm" height="110mm" viewBox="-10 -10 280 220" onload="window.__baseScript=1">
+  <script>window.__baseScript=1</script>
+  <style>@import url(https://example.com/x.css); rect{fill:red}</style>
+  <foreignObject width="10" height="10"><div xmlns="http://www.w3.org/1999/xhtml">x</div></foreignObject>
+  <image href="https://example.com/track.png" width="10" height="10"/>
+  <a href="javascript:alert(1)"><circle r="3"/></a>
+  <rect x="-10" y="-10" width="280" height="220" fill="#5b7fa6"/>
+  <g transform="translate(10,10)">
+    <path d="M30 0 H230 Q260 0 260 30 V150 Q260 180 230 180 Q200 200 130 200 Q60 200 30 180 Q0 180 0 150 V30 Q0 0 30 0 Z" fill="#dfe8f1" onclick="alert(2)"/>
+    <path id="CutContour" d="M30 0 H230 Q260 0 260 30 V150 Q260 180 230 180 Q200 200 130 200 Q60 200 30 180 Q0 180 0 150 V30 Q0 0 30 0 Z" fill="none" stroke="#e6007e"/>
+  </g>
+  <text x="40" y="40" font-family="Georgia" font-size="20">ROASTERY</text>
+</svg>
