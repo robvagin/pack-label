@@ -9442,11 +9442,13 @@ var API = {
       ok: false,
       why: 'patch isn\'t an object or a string'
     };
-    var data = patch.state || patch;
+    var data = patch.state || patch, dropped = [];
     if (data.lot || data.blocks || data.layout || data.label || data.info || data.type) {
-      mergeDeep(S, data);
+      data = sanitize(data, DEFAULTS, '', dropped);
+      if (data) mergeDeep(S, data);
     } else {
-      mergeDeep(S.lot, data);
+      data = sanitize(data, DEFAULTS.lot, 'lot.', dropped);
+      if (data) mergeDeep(S.lot, data);
     }
     buildPanel();
     apply('blocks');
