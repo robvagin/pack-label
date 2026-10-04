@@ -7815,6 +7815,16 @@ function schemaReset(saved) {
 }
 
 function migrate() {
+  if (S.piece !== 'label' && S.piece !== 'base') S.piece = 'label';
+  if (!STOCK.some(function(s) {
+    return s.id === S.label.preset;
+  })) S.label.preset = DEFAULTS.label.preset;
+  var st = stockById(S.label.preset);
+  S.label.w = st.w;
+  S.label.h = st.h;
+  S.lot.descriptors = (S.lot.descriptors || []).filter(function(d) {
+    return typeof d === 'string' && d.trim();
+  });
   normalizeMonoFaces();
   normalizeTypeHierarchy();
   normalizeBaseText();
@@ -9513,6 +9523,7 @@ var API = {
       data = sanitize(data, DEFAULTS.lot, 'lot.', dropped);
       if (data) mergeDeep(S.lot, data);
     }
+    migrate();
     buildPanel();
     apply('blocks');
     return {
@@ -9538,7 +9549,7 @@ var API = {
     opts = opts || {};
     if (opts.composition) S.layout.mode = opts.composition;
     if (opts.stock) S.label.preset = opts.stock;
-    if (opts.piece) S.piece = opts.piece;
+    if (opts.piece === 'label' || opts.piece === 'base') S.piece = opts.piece;
     apply('label.preset');
     var out = {
       svg: svgDoc(!!opts.forPrint, opts.cut !== false),
