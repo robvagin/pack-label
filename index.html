@@ -8233,7 +8233,9 @@ function tsplDoc(bm, ppi) {
   var head = 'SIZE ' + mm(bm.w) + ' mm,' + mm(bm.h) + ' mm\n' + 'GAP 2 mm,0 mm\n' + 'DIRECTION 1\n' + 'DENSITY ' + (S.info.mode === 'direct' ? 12 : 8) + '\n' + 'SPEED 4\n' + 'CLS\n' + 'BITMAP 0,0,' + bm.bpr + ',' + bm.h + ',0,';
   return {
     head: head,
-    body: bm.rows,
+    body: bm.rows.map(function(v) {
+      return ~v & 255;
+    }),
     tail: '\nPRINT 1,1\n'
   };
 }
