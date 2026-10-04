@@ -954,7 +954,8 @@ var S = {
     legalOnBase: 0,
     bleedMM: .04,
     printMargin: 5,
-    skipEdge: 1
+    skipEdge: 1,
+    law: 'eu_ua'
   },
   lot: {
     name: 'Ethiopia Guji',
@@ -6833,11 +6834,43 @@ function num(v, d) {
 
 var LEGAL_VERBATIM = [ 'legalname', 'legal', 'storage' ];
 
+var LAW_BASIS = {
+  name: [ '', 'Law 2639-VIII Art. 6(1)(1)' ],
+  legalname: [ 'EU 1169/2011 Art. 9(1)(a), Art. 17', 'Law 2639-VIII Art. 6(1)(1) · Art. 11' ],
+  weight: [ 'EU 1169/2011 Art. 9(1)(e), Art. 23; same field of vision as the name: Art. 13(5)', 'Law 2639-VIII Art. 6(1)(5) · Art. 8: in the same field of view as the name' ],
+  best: [ 'EU 1169/2011 Art. 9(1)(f), Art. 24, Annex X', 'Law 2639-VIII Art. 6(1)(6) · Art. 18' ],
+  legal: [ 'EU 1169/2011 Art. 9(1)(h), Art. 8', 'Law 2639-VIII Art. 6(1)(8)' ],
+  storage: [ 'EU 1169/2011 Art. 9(1)(g), Art. 25', 'Law 2639-VIII Art. 18(1)(3)' ],
+  batch: [ 'Directive 2011/91/EU Art. 3–4: a lot code unless the date gives day and month', 'Law 2639-VIII Art. 18(4): month-precision best before requires a batch code' ],
+  origin: [ 'EU 1169/2011 Art. 26(3), Reg. (EU) 2018/775: origin of the primary ingredient when the place of roasting is given', 'Law 2639-VIII Art. 20(2): country of manufacture differs from origin' ],
+  xheight: [ 'EU 1169/2011 Art. 13(2), Annex IV', 'EU 1169/2011 Art. 13(2), Annex IV' ],
+  date: [ 'EU 1169/2011 Art. 24, Annex X', 'EU 1169/2011 Art. 24, Annex X · Law 2639-VIII Art. 18' ],
+  month: [ 'EU 1169/2011 Annex X 1(c)', 'EU 1169/2011 Annex X 1(c)' ],
+  unit: [ 'EU 1169/2011 Art. 23(1)', 'EU 1169/2011 Art. 23(1)' ],
+  emark: [ 'Directive 76/211/EEC, Annex I', 'DSTU OIML R 79, Annex C' ],
+  print: [ 'print: two dots of a 203 dpi head, not a legal norm', 'print: two dots of a 203 dpi head, not a legal norm' ],
+  fit: [ 'layout: the stock does not hold the text, not a legal norm', 'layout: the stock does not hold the text, not a legal norm' ],
+  pack: [ 'placement on the base and pack, not a legal norm', 'placement on the base and pack, not a legal norm' ]
+};
+
+function lawUA() {
+  return !S.info || S.info.law !== 'eu';
+}
+
+function lawBasis(id) {
+  var b = LAW_BASIS[id];
+  return b ? b[lawUA() ? 1 : 0] : '';
+}
+
 function legalMust(L) {
   var Lot = S.lot;
-  var must = [ [ 'name', 'lot name', 'Art. 6(1)(1)' ], [ 'legalname', 'product name', 'Art. 6(1)(1) · Art. 11' ], [ 'weight', 'net', 'Art. 6(1)(5) · Art. 8: in the same field of view as the name' ], [ 'best', 'best before', 'Art. 6(1)(6) · Art. 18' ], [ 'legal', 'producer', 'Art. 6(1)(8)' ], [ 'storage', 'storage', 'Art. 18(1)(3)' ] ];
-  if (dateParts(bestDateNorm(Lot)) <= 2) must.push([ 'batch', 'batch code', 'Art. 18(4): month-precision best before requires a batch code' ]);
-  if (Lot.madeIn && Lot.country) must.push([ 'origin', 'coffee country of origin', 'Art. 20(2): country of manufacture differs from origin' ]);
+  var must = [ [ 'name', 'lot name' ], [ 'legalname', 'product name' ], [ 'weight', 'net' ], [ 'best', 'best before' ], [ 'legal', 'producer' ], [ 'storage', 'storage' ] ];
+  if (!lawUA()) must.shift();
+  if (dateParts(bestDateNorm(Lot)) <= 2) must.push([ 'batch', 'batch code' ]);
+  if (Lot.madeIn && Lot.country) must.push([ 'origin', 'coffee country of origin' ]);
+  must.forEach(function(m) {
+    m.push(lawBasis(m[0]));
+  });
   var probe = {
     name: Lot.name,
     legalname: legalName(Lot),
@@ -6873,6 +6906,7 @@ function legalMust(L) {
 function legalIds() {
   try {
     var Lot = S.lot, ids = [ 'name', 'legalname', 'weight', 'best', 'legal', 'storage' ];
+    if (!lawUA()) ids.shift();
     if (dateParts(bestDateNorm(Lot)) <= 2) ids.push('batch');
     if (Lot.madeIn && Lot.country) ids.push('origin');
     return ids;
@@ -7060,7 +7094,7 @@ function renderAcceptance(L, checked) {
   });
   if (inputs.length) {
     var detail = inputs.map(function(p) {
-      return p.items ? p.items.map(blockName).join(', ') : p.what;
+      return (p.items ? p.items.map(blockName).join(', ') : p.what) + (p.basis ? ' (' + p.basis + ')' : '');
     }).join(' · ');
     cards.push('<div class="note bad"><b>Check the lot data</b><span>' + esc(detail) + '</span><button class="act" data-note-focus="lot">Open lot and blocks</button></div>');
   }
@@ -7069,7 +7103,7 @@ function renderAcceptance(L, checked) {
   });
   if (dense.length) {
     var desc = dense.map(function(p) {
-      return p.what + (p.deficitMM != null ? ' by ' + p.deficitMM.toFixed(1) + ' mm' : '');
+      return p.what + (p.deficitMM != null ? ' by ' + p.deficitMM.toFixed(1) + ' mm' : '') + (p.basis ? ' (' + p.basis + ')' : '');
     }).join(' · ');
     cards.push('<div class="note bad"><b>Type needs adjusting</b><span>' + esc(desc) + '</span><div id="noteSolution" data-key="' + esc(key) + '">Checking scale, layout, mono and 1–2 optional blocks</div></div>');
   }
@@ -7077,7 +7111,7 @@ function renderAcceptance(L, checked) {
     return p.kind === 'pack' || p.kind === 'warn' || p.kind === 'dropped';
   });
   if (other.length) cards.push('<div class="note warn"><b>Check the base and placement</b><span>' + esc(other.map(function(p) {
-    return p.what;
+    return p.what + (p.basis ? ' (' + p.basis + ')' : '');
   }).join(' · ')) + '</span><button class="act" data-note-focus="base">Open base and pack</button></div>');
   if (S.blocks.ean && S.blocks.ean.on && !eanValid(S.lot.ean)) {
     var msg = '<span>Fix the EAN: it needs 13 digits with a valid check digit</span>';
@@ -7111,7 +7145,7 @@ function audit(L) {
       };
       var want = flat(legalName(S.lot));
       var nm = 0, rest = 0;
-      if (!want) return;
+      if (!want || !lawUA()) return;
       (L.items || []).forEach(function(it) {
         (it.lines || []).forEach(function(ln) {
           if (!ln.size) return;
@@ -7148,7 +7182,7 @@ function audit(L) {
   }
   if (isLabel() && S.info && S.info.emark) {
     var qs = qtySize(L), qf2 = qtyFloor(), qh = qs * .727;
-    chip(qs >= qf2 - .01 ? 'ok' : 'bad', 'net digits ' + qh.toFixed(1) + ' mm', 'Packs with the ℮ mark have their own minimum height for quantity digits: ' + (qf2 * .727).toFixed(0) + ' mm for this weight (DSTU OIML R 79, Annex C). ' + 'Printed at type size ' + qs.toFixed(2) + ' mm = digit height ' + qh.toFixed(2) + ' mm. ' + 'The ℮ mark itself has a rule too: at least 3 mm and in the same field of view as the quantity.');
+    chip(qs >= qf2 - .01 ? 'ok' : 'bad', 'net digits ' + qh.toFixed(1) + ' mm', 'Packs with the ℮ mark have their own minimum height for quantity digits: ' + (qf2 * .727).toFixed(0) + ' mm for this weight (' + lawBasis('emark') + '). ' + 'Printed at type size ' + qs.toFixed(2) + ' mm = digit height ' + qh.toFixed(2) + ' mm. ' + 'The ℮ mark itself has a rule too: at least 3 mm and in the same field of view as the quantity.');
   }
   var occ = L.info.h > 0 ? 1 - (L.mTop + L.mBot) / L.info.h : 0;
   var airCeil = L.band ? RULES.inkShareBand : L.info.h >= 30 ? RULES.inkShareTall : RULES.inkShare;
@@ -8989,11 +9023,11 @@ function buildPanel() {
       return a.indexOf(x) === i;
     }).length + ' fields' + (r.leftover.length ? ' · not recognized: ' + r.leftover.join(', ') : ''));
   });
-  g.appendChild(group('Lot', 'batch data', [ row('Paste a line', quick, 'One comma-separated line: name, region, variety, altitude, process, roast, notes, weight, date, batch. Order does not matter: each value is recognized by its shape'), row('Lot name', mkTxt('lot.name', 'Ethiopia Guji'), 'Trade name of the batch: the label hero'), row('Legal name', mkTxt('lot.legalName', ''), 'Leave empty to build it from grind and process: “Natural roasted coffee, whole bean”. Art. 6(1)(1)'), row('Country of origin', mkTxt('lot.country', 'Ethiopia'), 'This is the origin of the green coffee. The roasting location is stated separately: Art. 20(2)'), row('Region', mkTxt('lot.region', 'Guji, Hambela')), row('Farm', mkTxt('lot.farm', '')), row('Variety', mkTxt('lot.variety', 'Heirloom')), row('Altitude', mkTxt('lot.altitude', '1950–2100 m')), row('Process', mkSel('lot.process', UA_PROCESS)), row('Roast', mkSel('lot.roast', UA_ROAST)), row('Method', mkSel('lot.method', METHODS.map(function(m) {
+  g.appendChild(group('Lot', 'batch data', [ row('Paste a line', quick, 'One comma-separated line: name, region, variety, altitude, process, roast, notes, weight, date, batch. Order does not matter: each value is recognized by its shape'), row('Lot name', mkTxt('lot.name', 'Ethiopia Guji'), 'Trade name of the batch: the label hero'), row('Legal name', mkTxt('lot.legalName', ''), 'Leave empty to build it from grind and process: “Natural roasted coffee, whole bean”. ' + lawBasis('legalname')), row('Country of origin', mkTxt('lot.country', 'Ethiopia'), 'This is the origin of the green coffee. The roasting location is stated separately: ' + lawBasis('origin')), row('Region', mkTxt('lot.region', 'Guji, Hambela')), row('Farm', mkTxt('lot.farm', '')), row('Variety', mkTxt('lot.variety', 'Heirloom')), row('Altitude', mkTxt('lot.altitude', '1950–2100 m')), row('Process', mkSel('lot.process', UA_PROCESS)), row('Roast', mkSel('lot.roast', UA_ROAST)), row('Method', mkSel('lot.method', METHODS.map(function(m) {
     return [ m, m ];
   })), null, function() {
     return !!(S.blocks.method && S.blocks.method.on);
-  }), row('Weight', mkTxt('lot.weight', '250 g')), row('Roast date', mkTxt('lot.date', '11.08.26')), row('Grind', mkSel('lot.grind', [ [ 'Whole bean', 'Whole bean' ], [ 'Ground', 'Ground' ] ])), row('Best before', mkTxt('lot.bestDate', '11.08.27'), 'Art. 18(1): the print will read “Best before 11.08.2027”. The law requires a DATE, not a period like “12 months”; the “use by” form does not apply to coffee'), row('Year in dates', mkSeg('lot.dateStyle', [ [ 'yyyy', '11.08.2026' ], [ 'yy', '11.08.26' ] ]), 'One format for both dates, roast and best before: the law requires “day.month.year” consistently across the label'), row('Date precision', mkSeg('lot.bestPrec', [ [ 'day', 'Day' ], [ 'month', 'Month' ] ]), 'The wording follows from the date itself: two parts give “best before end”, three give “best before”. Choosing “Month” makes the BATCH CODE required: Art. 18(4): when a month-precision date is not enough to identify the batch, it must be stated separately'), row('Batch', mkTxt('lot.batch', 'L-0824')), row('Brand line', mkTxt('lot.note', 'Freshly roasted coffee')), row('Producer', mkTxt('lot.producer', 'Roastery, Kyiv'), 'Name and address of the food business operator: Art. 6 Part 1 Item 8'), row('Roast location', mkTxt('lot.madeIn', 'Roasted in Ukraine'), 'Bean origin and country of manufacture differ: Art. 20 Part 2 requires telling them apart'), row('Storage', mkTxt('lot.storage', 'Store in a dry place')), row('EAN-13', mkTxt('lot.ean', '2000000000008')), row('Website', mkTxt('lot.site', 'roastery.example')) ]));
+  }), row('Weight', mkTxt('lot.weight', '250 g')), row('Roast date', mkTxt('lot.date', '11.08.26')), row('Grind', mkSel('lot.grind', [ [ 'Whole bean', 'Whole bean' ], [ 'Ground', 'Ground' ] ])), row('Best before', mkTxt('lot.bestDate', '11.08.27'), lawBasis('best') + ': the print will read “Best before 11.08.2027”. The law requires a DATE, not a period like “12 months”; the “use by” form does not apply to coffee'), row('Year in dates', mkSeg('lot.dateStyle', [ [ 'yyyy', '11.08.2026' ], [ 'yy', '11.08.26' ] ]), 'One format for both dates, roast and best before: the law requires “day.month.year” consistently across the label'), row('Date precision', mkSeg('lot.bestPrec', [ [ 'day', 'Day' ], [ 'month', 'Month' ] ]), 'The wording follows from the date itself: two parts give “best before end”, three give “best before”. Choosing “Month” makes the BATCH CODE required: ' + lawBasis('batch') + '. Month only is allowed when the coffee keeps longer than 3 months: ' + lawBasis('month')), row('Batch', mkTxt('lot.batch', 'L-0824')), row('Brand line', mkTxt('lot.note', 'Freshly roasted coffee')), row('Producer', mkTxt('lot.producer', 'Roastery, Kyiv'), 'Name and address of the food business operator: ' + lawBasis('legal')), row('Roast location', mkTxt('lot.madeIn', 'Roasted in Ukraine'), 'Bean origin and country of manufacture differ: ' + lawBasis('origin')), row('Storage', mkTxt('lot.storage', 'Store in a dry place')), row('EAN-13', mkTxt('lot.ean', '2000000000008')), row('Website', mkTxt('lot.site', 'roastery.example')) ]));
   var notes = document.createElement('div');
   notes.className = 'seg chips';
   UA_DESCRIPTORS.forEach(function(d) {
@@ -9023,20 +9057,20 @@ function buildPanel() {
   var leds = document.createElement('div');
   var NOTE = {
     name: 'label hero',
-    legalname: 'required · Art. 6(1)(1)',
+    legalname: 'required · ' + lawBasis('legalname'),
     notes: 'notes',
     origin: 'country · region · variety · altitude',
     process: 'process · roast',
     method: 'duplicates roast if it is “for filter”',
     scales: 'scales: unreadable on thermal print',
-    weight: 'required · Art. 6(1)(5)',
+    weight: 'required · ' + lawBasis('weight'),
     roasted: 'roast date, optional',
     grind: 'moved into the legal name',
     batch: 'lot code',
     best: 'required · “Best before”',
     note: 'brand line',
     legal: 'required · producer and location',
-    storage: 'required · Art. 18(1)(3)',
+    storage: 'required · ' + lawBasis('storage'),
     ean: 'barcode',
     site: 'website',
     rule: 'rule'
@@ -9114,7 +9148,7 @@ function buildPanel() {
       d.innerHTML = 'Free area of the base <b>' + gm.bodyW.toFixed(1) + ' × ' + gm.fieldH.toFixed(1) + '</b> mm · ' + 'layout ' + st.w + ' × ' + st.h + '<br>Label margins: left <b>' + f.left.toFixed(1) + '</b> · right <b>' + f.right.toFixed(1) + '</b> · top <b>' + f.top.toFixed(1) + '</b> · bottom <b>' + f.bot.toFixed(1) + '</b> mm' + (f.clampX || f.clampY ? '<br><b style="color:#8a6412">offset hits the edge of the free area: ' + (f.clampX ? 'horizontally by ' + Math.abs(f.clampX).toFixed(1) + ' mm' : '') + (f.clampX && f.clampY ? ' · ' : '') + (f.clampY ? 'vertically by ' + Math.abs(f.clampY).toFixed(1) + ' mm' : '') + ': any further and the label would cover the mark</b>' : '') + (f.ok ? '' : ' · <b style="color:#b0482a">does not fit: see the reason in Checks</b>');
     });
     return d;
-  }(), foldHint('The label is always <b>black and white</b>: a thermal head can only burn paper, it has no ink. Color lives on the base, printed separately and once.'), row('Fixed info · on base', mkTog('info.legalOnBase'), 'Producer, address, storage and website are printed on the base, not on every label'), row('℮ mark on the pack', mkTog('info.emark'), 'Packs with ℮ have their own minimum height for net weight digits: 4 mm for 200 g – 1 kg (DSTU OIML R 79)'), studio() ? row('Bleed', mkScrub('size.bleed', 0, 6, .5, 'mm'), 'Standard at European digital print shops: 2 mm') : null, studio() ? row('Safe zone', mkScrub('size.safe', 0, 8, .5, 'mm'), 'Technical cut tolerance. Converter standard is 1.5–2 mm') : null ]));
+  }(), foldHint('The label is always <b>black and white</b>: a thermal head can only burn paper, it has no ink. Color lives on the base, printed separately and once.'), row('Fixed info · on base', mkTog('info.legalOnBase'), 'Producer, address, storage and website are printed on the base, not on every label'), row('℮ mark on the pack', mkTog('info.emark'), 'Packs with ℮ have their own minimum height for net weight digits: 4 mm for 200 g – 1 kg (' + lawBasis('emark') + ')'), studio() ? row('Bleed', mkScrub('size.bleed', 0, 6, .5, 'mm'), 'Standard at European digital print shops: 2 mm') : null, studio() ? row('Safe zone', mkScrub('size.safe', 0, 8, .5, 'mm'), 'Technical cut tolerance. Converter standard is 1.5–2 mm') : null ]));
   g.appendChild(group('Pack', 'two packs side by side: 250 and 500 g', [ row('Norm from pack', mkSeg('size.pack', PACKS.map(function(p) {
     return [ p.id, p.name ];
   })), 'Both packs are always on stage. This control sets which one the legal type-size allowance is counted from and whose margins the hints show'), row('Material', mkSeg('bag.material', MATERIAL.map(function(x) {
@@ -9587,7 +9621,10 @@ function checkData() {
   if (missing.length) problems.push({
     kind: 'law',
     what: 'required items aren\'t present',
-    items: missing
+    items: missing,
+    basis: lm.miss.map(function(m) {
+      return m[1] + ': ' + m[2];
+    }).join(' · ')
   });
   lm.dates.forEach(function(d) {
     problems.push({
@@ -9595,13 +9632,15 @@ function checkData() {
       what: d.what,
       value: d.value,
       roast: d.roast,
-      best: d.best
+      best: d.best,
+      basis: lawBasis(/3 months/.test(d.what) ? 'month' : 'date')
     });
   });
   if (S.blocks.weight && S.blocks.weight.on && String(Lot.weight || '').trim() && !/\d\s*(?:г|кг|мл|л|g|kg|ml|cl|l)(?![\w\u0400-\u04ff])/i.test(Lot.weight)) problems.push({
     kind: 'law',
     what: 'net quantity has no unit (g, kg)',
-    value: Lot.weight
+    value: Lot.weight,
+    basis: lawBasis('unit')
   });
   if (BASE.custom) {
     var cb = BASE.cutBox, fb = [ BASE.body[0], BASE.haloBot, BASE.body[1], BASE.infoTop ];
@@ -9617,7 +9656,8 @@ function checkData() {
   if (onBase) problems.push({
     kind: BASE.custom ? 'warn' : 'law',
     what: 'fixed info moved to base · not verified',
-    items: [ 'legal', 'storage' ]
+    items: [ 'legal', 'storage' ],
+    basis: lawBasis('legal') + ' · ' + lawBasis('storage')
   });
   if (L.ink > L.info.h + .02) problems.push({
     kind: 'fit',
@@ -9641,7 +9681,8 @@ function checkData() {
     kind: 'law',
     what: 'letter x-height below minimum',
     value: +xh.toFixed(3),
-    min: LAW.xHeightMin
+    min: LAW.xHeightMin,
+    basis: lawBasis('xheight')
   });
   if (th.mm < strokeFloor() - .005) problems.push({
     kind: 'print',
@@ -9680,10 +9721,14 @@ function checkData() {
     kind: 'pack',
     what: 'layout does not fit the free area of the base'
   });
+  problems.forEach(function(p) {
+    if (!p.basis && LAW_BASIS[p.kind]) p.basis = lawBasis(p.kind);
+  });
   return {
     ok: problems.filter(function(p) {
       return p.kind !== 'dropped' && p.kind !== 'warn' && p.level !== 'warn';
     }).length === 0,
+    profile: lawUA() ? 'eu_ua' : 'eu',
     problems: problems,
     measures: {
       composition: S.layout.mode,
