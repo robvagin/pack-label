@@ -2355,7 +2355,15 @@ function roastLine(o) {
 function bestDateNorm(L) {
   var raw = String(L.bestDate || '').trim();
   if (!raw) return '';
-  var d = yearNorm(raw);
+  var d = yearNorm(raw), p = dateParse(raw);
+  if (L.bestPrec === 'month' && p && p.d !== null && p.d < new Date(p.y, p.m, 0).getDate()) {
+    var m = p.m - 1, y = p.y;
+    if (!m) {
+      m = 12;
+      y--;
+    }
+    return yearNorm((m < 10 ? '0' : '') + m + '.' + y);
+  }
   if (L.bestPrec === 'month' && dateParts(d) >= 3) d = d.replace(/^\d+[.\/\-]/, '');
   return d;
 }
