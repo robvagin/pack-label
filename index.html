@@ -6918,7 +6918,7 @@ function audit(L) {
       var k = rest > 0 ? nm / rest : 0;
       chip(byHeight || byRatio ? 'ok' : 'warn', 'DSTU 4518 · name ' + (byHeight || byRatio ? 'complies' : k.toFixed(2) + '× the rest'), 'DSTU 4518:2008 «Food products. Labeling for consumers»: the letter height of the name ' + 'product name must be at least 5 mm; if that is impossible, the type size of all words in the name ' + 'must be at least twice the type size of other information. The legal name is currently ' + 'set at ' + nm.toFixed(2) + ' mm vs. the largest other text at ' + rest.toFixed(2) + ' mm. ' + 'The standard has been voluntary since 2019; Law 2639-VIII sets the mandatory minimum: ' + 'x-height 1.2 mm, and it is met. But some retail chains require DSTU as a separate clause ' + 'in the supply contract, so check this before shipping to a chain.');
     })();
-    if (onBase) chip('warn', 'fixed info on base · not verified', 'Producer, address, roast location and storage moved off the label «to the base». ' + 'The lower info block of the base currently holds a placeholder, not these lines, so on the batch ' + 'they are physically not there. Either turn off the toggle or first place a real info block in the base vector.');
+    if (onBase) chip('bad', 'fixed info on base · not verified', 'Producer, address, roast location and storage moved off the label «to the base». ' + 'The lower info block of the base currently holds a placeholder, not these lines, so on the batch ' + 'they are physically not there. Either turn off the toggle or first place a real info block in the base vector.');
     lm.dates.forEach(function(d) {
       chip('bad', d.what, d.value ? 'Entered «' + d.value + '». A date must read as a date: ' + 'dd.mm.yyyy or mm.yyyy. Anything unreadable is not a valid detail, and the batch cannot be printed with it.' : 'Roasted “' + d.roast + '», best before «' + d.best + '». Best before must be LATER than the roast date.');
     });
@@ -9270,7 +9270,7 @@ function checkData() {
     });
   });
   if (onBase) problems.push({
-    kind: 'warn',
+    kind: 'law',
     what: 'fixed info moved to base · not verified',
     items: [ 'legal', 'storage' ]
   });
