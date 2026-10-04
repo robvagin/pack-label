@@ -9209,7 +9209,7 @@ function parseLot(line) {
       return;
     }
     if (!out.altitude && /^\d{3,4}\s*[–—-]\s*\d{3,4}(?:\s*м)?$/.test(tok)) return take(tok, 'altitude', tok.replace(/\s*[–—-]\s*/, '–').replace(/\s*м$/, '') + ' m');
-    if (!out.batch && /^(?:l|л|lot|лот)[\s-]?[\w\/-]+$/i.test(tok)) return take(tok, 'batch', tok.toUpperCase().replace(/^(LOT|ЛОТ)\s*/, 'L-'));
+    if (!out.batch && /\d/.test(tok) && /^(?:l|л|lot|лот)[\s-]?[\w\/-]+$/i.test(tok)) return take(tok, 'batch', tok.toUpperCase().replace(/^(LOT|ЛОТ)\s*/, 'L-'));
     var pr = UA_PROCESS.filter(function(x) {
       return x[0] === low || x[1].toLowerCase() === low || low === 'natural' && x[0] === 'natural' || low === 'washed' && x[0] === 'washed';
     })[0];
