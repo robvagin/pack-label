@@ -6890,7 +6890,7 @@ function renderAcceptance(L, checked) {
 function audit(L) {
   var c = [];
   function chip(st, t, tip) {
-    c.push('<span class="chip ' + st + '"' + (tip ? ' data-tiptext="' + esc(tip) + '"' : '') + '>' + t + '</span>');
+    c.push('<span class="chip ' + st + '"' + (tip ? ' data-tiptext="' + esc(tip) + '"' : '') + '>' + esc(t) + '</span>');
   }
   if (isLabel()) {
     var lm = legalMust(L), miss = lm.miss, onBase = lm.onBase;
