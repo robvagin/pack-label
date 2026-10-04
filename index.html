@@ -9188,8 +9188,8 @@ function parseLot(line) {
     ok: false,
     why: 'empty string'
   };
-  var toks = src.split(/\s*[,;|]\s*|\s+—\s+/).map(function(s) {
-    return s.trim();
+  var toks = src.replace(/(\d),(\d+\s*(?:г|g|кг|kg)(?![\w\u0400-\u04ff]))/gi, '$1\u0000$2').split(/\s*[,;|]\s*|\s+—\s+/).map(function(s) {
+    return s.replace(/\u0000/g, ',').trim();
   }).filter(Boolean);
   var out = {}, rest = [], used = [];
   function take(tok, field, val) {
