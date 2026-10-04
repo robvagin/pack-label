@@ -873,7 +873,23 @@ var S = {
     textSize: 2.78,
     textGap: 3.7,
     textInset: 5.65,
-    contactsVersion: 4
+    contactsVersion: 4,
+    custom: {
+      on: 0,
+      name: '',
+      svg: '',
+      w: 120,
+      cut: 'file',
+      radius: 3,
+      bleed: 2,
+      bleedColor: '#ffffff',
+      field: {
+        x: 10,
+        y: 40,
+        w: 100,
+        h: 45
+      }
+    }
   },
   label: {
     preset: '105x37',
@@ -1267,7 +1283,7 @@ var BUILD = {
 
 window.__PACKLABEL_BUILD__ = BUILD;
 
-var BASE = {
+var BASE_STUB = {
   vb: [ 357.17, 283.59 ],
   ar: 1.259459078246765,
   body: [ 19.34, 349.03 ],
@@ -1284,6 +1300,8 @@ var ASSET4 = {
   vb: [ 824.9, 205.59 ],
   art: '<g><circle cx="160" cy="102.8" r="75" fill="#a3a29d"/><polygon points="412.45,27.8 499.05,177.8 325.85,177.8" fill="#6f6e69"/><rect x="590" y="27.8" width="150" height="150" fill="#1a1a1a"/></g>'
 };
+
+var BASE = BASE_STUB;
 
 function baseH(w) {
   return w / BASE.ar;
@@ -1349,7 +1367,177 @@ function baseFooterLayout() {
   };
 }
 
-function baseMarkup() {
+var BASE_TAGS = /^(svg|g|path|rect|circle|ellipse|line|polyline|polygon|text|tspan|defs|lineargradient|radialgradient|stop|clippath|mask|pattern|use|symbol|title|desc|image)$/;
+
+var _baseSvgCache = {
+  raw: null,
+  out: null
+};
+
+function baseSvgClean(raw) {
+  if (_baseSvgCache.raw === raw) return _baseSvgCache.out;
+  var out = null;
+  try {
+    var doc = new DOMParser().parseFromString(String(raw || ''), 'image/svg+xml'), root = doc.documentElement;
+    if (root && root.nodeName.toLowerCase() === 'svg' && !doc.getElementsByTagName('parsererror').length) {
+      var text = false, fill = null, ids = {};
+      (function walk(el) {
+        Array.prototype.slice.call(el.children).forEach(function(c) {
+          var tag = c.nodeName.toLowerCase().replace(/^svg:/, '');
+          if (!BASE_TAGS.test(tag)) {
+            c.remove();
+            return;
+          }
+          if (tag === 'text') text = true;
+          Array.prototype.slice.call(c.attributes).forEach(function(a) {
+            var n = a.name.toLowerCase(), v = a.value;
+            if (/^on/.test(n) || n === 'style' && /url\(\s*['"]?(?!#)|@import|expression/i.test(v)) c.removeAttribute(a.name); else if (/(^|:)href$/.test(n) && !(/^#/.test(v) || tag === 'image' && /^data:image\/(png|jpe?g|gif|webp);/i.test(v))) c.removeAttribute(a.name); else if (/^(fill|stroke|filter|clip-path|mask|marker-\w+)$/.test(n) && /url\(\s*['"]?(?!#)/i.test(v)) c.removeAttribute(a.name);
+          });
+          if (c.id) ids[c.id] = 1;
+          if (!fill && /^(rect|path|polygon|circle|ellipse)$/.test(tag)) {
+            var fv = c.getAttribute('fill');
+            if (fv && /^#[0-9a-f]{3,6}$/i.test(fv)) fill = fv;
+          }
+          walk(c);
+        });
+      })(root);
+      var vb = (root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+      var unit = function(v) {
+        var m = String(v || '').match(/^\s*([\d.]+)\s*(mm|cm|in|pt|px)?\s*$/);
+        if (!m) return null;
+        return +m[1] * ({
+          mm: 1,
+          cm: 10,
+          in: 25.4,
+          pt: 25.4 / 72
+        }[m[2]] || 25.4 / 96);
+      };
+      var wMM = unit(root.getAttribute('width')), hMM = unit(root.getAttribute('height'));
+      if (!(vb.length === 4 && vb[2] > 0 && vb[3] > 0)) vb = wMM && hMM ? [ 0, 0, +String(root.getAttribute('width')).replace(/[^\d.]/g, ''), +String(root.getAttribute('height')).replace(/[^\d.]/g, '') ] : null;
+      if (vb) {
+        var markup = Array.prototype.slice.call(root.children).map(function(c) {
+          return new XMLSerializer().serializeToString(c);
+        }).join('');
+        Object.keys(ids).forEach(function(id) {
+          var e = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          markup = markup.replace(new RegExp('(id="|#)' + e + '(?=["\')\\s])', 'g'), '$1cb-' + id);
+        });
+        markup = markup.replace(/ xmlns(:\w+)?="[^"]*"/g, '');
+        var host = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        host.setAttribute('viewBox', vb.join(' '));
+        host.setAttribute('style', 'position:absolute;left:-9999px;top:0;width:200px;height:200px;visibility:hidden');
+        host.innerHTML = markup;
+        document.body.appendChild(host);
+        var cutEl = null;
+        $$('[id]', host).forEach(function(e) {
+          if (!cutEl && /cut|die|contour|kiss/i.test(e.id.replace(/^cb-/, '')) && /^(path|rect|circle|ellipse|polygon)$/i.test(e.nodeName)) cutEl = e;
+        });
+        var cut = null;
+        if (cutEl) {
+          var m = host.getCTM().inverse().multiply(cutEl.getCTM()), bb = cutEl.getBBox(), pt = host.createSVGPoint(), xs = [], ys = [];
+          [ [ bb.x, bb.y ], [ bb.x + bb.width, bb.y ], [ bb.x, bb.y + bb.height ], [ bb.x + bb.width, bb.y + bb.height ] ].forEach(function(q) {
+            pt.x = q[0];
+            pt.y = q[1];
+            var r = pt.matrixTransform(m);
+            xs.push(r.x);
+            ys.push(r.y);
+          });
+          var clone = cutEl.cloneNode(false);
+          [ 'id', 'class', 'style', 'fill', 'stroke', 'stroke-width', 'opacity', 'transform' ].forEach(function(a) {
+            clone.removeAttribute(a);
+          });
+          cut = {
+            el: new XMLSerializer().serializeToString(clone).replace(/ xmlns(:\w+)?="[^"]*"/g, ''),
+            m: [ m.a, m.b, m.c, m.d, m.e, m.f ],
+            scale: Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1,
+            box: [ Math.min.apply(null, xs), Math.min.apply(null, ys), Math.max.apply(null, xs), Math.max.apply(null, ys) ]
+          };
+          cutEl.parentNode.removeChild(cutEl);
+          markup = host.innerHTML;
+        }
+        host.remove();
+        out = {
+          markup: markup,
+          vb: vb,
+          wMM: wMM,
+          hMM: hMM,
+          cut: cut,
+          text: text,
+          fill: fill
+        };
+      }
+    }
+  } catch (e) {
+    out = null;
+  }
+  _baseSvgCache = {
+    raw: raw,
+    out: out
+  };
+  return out;
+}
+
+function customBase(c) {
+  var f = baseSvgClean(c.svg);
+  if (!f) return null;
+  var useFile = c.cut === 'file' && f.cut, b = clamp(+c.bleed || 0, 0, 10);
+  var u = useFile ? f.cut.box : [ f.vb[0], f.vb[1], f.vb[0] + f.vb[2], f.vb[1] + f.vb[3] ];
+  var W = clamp(+c.w || 120, 20, 400), s = W / (u[2] - u[0]), H = (u[3] - u[1]) * s, r = clamp(+c.radius || 0, 0, Math.min(W, H) / 2);
+  var box = [ 0, 0, W, H ];
+  var fx = +c.field.x || 0, fy = +c.field.y || 0, fw = Math.max(1, +c.field.w || 1), fh = Math.max(1, +c.field.h || 1);
+  var inFile = '<g transform="scale(' + s.toFixed(8) + ') translate(' + -u[0] + ',' + -u[1] + ')">';
+  var shape = function(k, attrs, grow) {
+    if (useFile) return f.cut.el.replace(/\s*\/?>$/, ' transform="scale(' + (k * s).toFixed(8) + ') translate(' + -u[0] + ',' + -u[1] + ') matrix(' + f.cut.m.join(' ') + ')" ' + attrs(k * s * f.cut.scale) + '/>');
+    return '<path transform="scale(' + k + ')" d="' + pRectAt(-grow, -grow, W + 2 * grow, H + 2 * grow, r + grow) + '" ' + attrs(k) + '/>';
+  };
+  var color = /^#[0-9a-f]{3,6}$/i.test(c.bleedColor) ? c.bleedColor : '#ffffff';
+  return {
+    custom: 1,
+    vb: [ W, H ],
+    ar: W / H,
+    body: [ fx, fx + fw ],
+    haloBot: fy,
+    infoTop: fy + fh,
+    symbol: [ 0, fy + fh, 0, 0 ],
+    art: inFile + f.markup + '</g>',
+    cutBox: box,
+    bleedBox: [ box[0] - b, box[1] - b, box[2] - box[0] + 2 * b, box[3] - box[1] + 2 * b ],
+    text: f.text,
+    fileCut: !!f.cut,
+    shape: shape,
+    cutMarkup: function(k) {
+      return shape(k, function(u) {
+        return 'fill="none" stroke="#e6007e" stroke-width="' + (.1 / u).toFixed(5) + '"';
+      }, 0);
+    },
+    bleedMarkup: function(k) {
+      return useFile ? shape(k, function(u) {
+        return 'fill="' + color + '" stroke="' + color + '" stroke-width="' + (2 * b / u).toFixed(5) + '" stroke-linejoin="round"';
+      }, 0) : shape(k, function() {
+        return 'fill="' + color + '"';
+      }, b);
+    }
+  };
+}
+
+function applyBase() {
+  var c = S.base && S.base.custom, d = c && c.on && c.svg ? customBase(c) : null;
+  if (c && c.on && !d) c.on = 0;
+  BASE = d || BASE_STUB;
+  if (d) {
+    S.base.w = d.vb[0];
+    if (!c.name) c.name = 'base.svg';
+  } else if (S.base) S.base.w = BASE_W;
+}
+
+function baseMarkup(clip) {
+  if (BASE.custom) {
+    var k0 = S.base.w / BASE.vb[0], id = 'baseClip' + (clip === 'bleed' ? 'B' : 'C');
+    var cp = clip === 'bleed' ? BASE.bleedMarkup(k0) : BASE.shape(k0, function() {
+      return '';
+    }, 0);
+    return '<defs><clipPath id="' + id + '">' + cp + '</clipPath></defs><g clip-path="url(#' + id + ')"><g transform="scale(' + k0.toFixed(8) + ')">' + BASE.art + '</g></g>';
+  }
   var g = baseGeom(), f = baseFooterLayout();
   var attrs = ' y="' + f.y.toFixed(5) + '" font-family="' + famStackKey('inter') + '" font-size="' + f.size.toFixed(5) + '" font-weight="400" fill="#1a1a1a" xml:space="preserve"';
   return '<g transform="scale(' + g.k.toFixed(8) + ')">' + BASE.art + '</g>' + '<g id="BaseContacts">' + (f.left ? '<text data-contact="left" x="' + f.x.toFixed(5) + '"' + attrs + '>' + esc(f.left) + '</text>' : '') + (f.right ? '<text data-contact="right" text-anchor="end" x="' + f.end.toFixed(5) + '"' + attrs + '>' + esc(f.right) + '</text>' : '') + '</g>';
@@ -7732,7 +7920,6 @@ function autoload() {
     var stale = schemaReset(saved);
     mergeDeep(S, saved);
     migrate();
-    S.base.w = BASE_W;
     S.bag.foldSide = 'other';
     if (!STOCK.some(function(s) {
       return s.id === S.label.preset;
@@ -7830,6 +8017,7 @@ function migrate() {
   normalizeMonoFaces();
   normalizeTypeHierarchy();
   normalizeBaseText();
+  applyBase();
   if (S.layout && typeof S.layout.kvSep === 'string') S.layout.kvSep = kvSepOf();
 }
 
@@ -7936,10 +8124,11 @@ function syncPiece() {
 
 function apply(what) {
   if (/^base\./.test(what || '')) normalizeBaseText();
+  applyBase();
   if (/^type\.face\./.test(what || '')) normalizeMonoFaces();
   if (what === 'piece') pieceInit(); else syncPiece();
   if (/^ui/.test(what || '')) applyViewMode();
-  if (/^(label|piece|info|ui)/.test(what || '')) {
+  if (/^(label|piece|info|ui|base\.custom)/.test(what || '')) {
     if (typeof buildOut === 'function') buildOut();
   }
   if (what === 'layout.mode') {
@@ -8127,11 +8316,11 @@ function basePrintDoc(withCut) {
   var k = S.base.w / BASE.vb[0], b = BASE.bleedBox.map(function(v) {
     return v * k;
   });
-  var art = baseMarkup(), cmyk = '';
+  var art = baseMarkup('bleed'), cmyk = '';
   withPiece('base', function() {
     cmyk = inkStyle();
   });
-  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="' + b[2] + 'mm" height="' + b[3] + 'mm" viewBox="' + b.join(' ') + '">' + '<metadata>Pack Label ' + BUILD.buildId + ' · current text · source cut line and 2 mm bleed</metadata>' + fontCss(art) + cmyk + '<g id="Bleed"><path transform="scale(' + k + ')" d="' + BASE.bleed + '" fill="#e9e8e4"/></g><g id="Artwork">' + art + '</g>' + (withCut ? '<g id="Cut" data-spot="Cut"><path transform="scale(' + k + ')" d="' + BASE.cut + '" fill="none" stroke="#e6007e" stroke-width="' + .1 / k + '"/></g>' : '') + '</svg>';
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="' + b[2] + 'mm" height="' + b[3] + 'mm" viewBox="' + b.join(' ') + '">' + '<metadata>Pack Label ' + BUILD.buildId + ' · current text · source cut line and 2 mm bleed</metadata>' + fontCss(art) + cmyk + '<g id="Bleed">' + (BASE.custom ? BASE.bleedMarkup(k) : '<path transform="scale(' + k + ')" d="' + BASE.bleed + '" fill="#e9e8e4"/>') + '</g><g id="Artwork">' + art + '</g>' + (withCut ? '<g id="Cut" data-spot="Cut">' + (BASE.custom ? BASE.cutMarkup(k) : '<path transform="scale(' + k + ')" d="' + BASE.cut + '" fill="none" stroke="#e6007e" stroke-width="' + .1 / k + '"/>') + '</g>' : '') + '</svg>';
 }
 
 function wordmarkDoc() {
@@ -10005,6 +10194,10 @@ window.PACKLABEL = {
   svgDoc: svgDoc,
   sheetDoc: sheetDoc,
   baseGeom: baseGeom,
+  applyBase: applyBase,
+  baseCutBox: function() {
+    return (BASE.cutBox || [ 0, 0, BASE.vb[0], BASE.vb[1] ]).slice(0);
+  },
   packFit: packFit,
   stockFit: stockFit,
   ASSET4: ASSET4,
