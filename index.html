@@ -8115,8 +8115,11 @@ function basePrintDoc(withCut) {
   var k = S.base.w / BASE.vb[0], b = BASE.bleedBox.map(function(v) {
     return v * k;
   });
-  var art = baseMarkup();
-  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="' + b[2] + 'mm" height="' + b[3] + 'mm" viewBox="' + b.join(' ') + '">' + '<metadata>Pack Label ' + BUILD.buildId + ' · current text · source cut line and 2 mm bleed</metadata>' + fontCss(art) + '<g id="Bleed"><path transform="scale(' + k + ')" d="' + BASE.bleed + '" fill="#e9e8e4"/></g><g id="Artwork">' + art + '</g>' + (withCut ? '<g id="Cut" data-spot="Cut"><path transform="scale(' + k + ')" d="' + BASE.cut + '" fill="none" stroke="#e6007e" stroke-width="' + .1 / k + '"/></g>' : '') + '</svg>';
+  var art = baseMarkup(), cmyk = '';
+  withPiece('base', function() {
+    cmyk = inkStyle();
+  });
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="' + b[2] + 'mm" height="' + b[3] + 'mm" viewBox="' + b.join(' ') + '">' + '<metadata>Pack Label ' + BUILD.buildId + ' · current text · source cut line and 2 mm bleed</metadata>' + fontCss(art) + cmyk + '<g id="Bleed"><path transform="scale(' + k + ')" d="' + BASE.bleed + '" fill="#e9e8e4"/></g><g id="Artwork">' + art + '</g>' + (withCut ? '<g id="Cut" data-spot="Cut"><path transform="scale(' + k + ')" d="' + BASE.cut + '" fill="none" stroke="#e6007e" stroke-width="' + .1 / k + '"/></g>' : '') + '</svg>';
 }
 
 function wordmarkDoc() {
