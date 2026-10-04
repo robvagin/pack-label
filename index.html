@@ -9149,10 +9149,80 @@ function buildPanel() {
     S.bag.bottomMM = DEFAULTS.bag.bottomMM;
     buildPanel();
     apply('bag.ay');
-  }), swatchHead('Base text'), row('Left text', mkTxt('base.leftText', 'Domain or other text'), 'Text after the square symbol. Changes show right away on both packs and in the base export. An empty field removes the text.'), row('Right text', mkTxt('base.rightText', 'Social page or other text'), 'The text is right-aligned. Its edge stays put when the text length changes. An empty field removes the text.'), row('Text size', mkScrub('base.textSize', 1.5, 5, .1, 'mm'), 'One size for both captions. Long lines shrink together so they never collide; the actual type size is shown below.'), row('After symbol', mkScrub('base.textGap', 0, 16, .1, 'mm'), 'Gap from the right edge of the square symbol to the start of the left text.'), row('From right edge', mkScrub('base.textInset', 2, 24, .1, 'mm'), 'Inset of the right-hand text from the edge of the base. By default it matches the right edge of the 105 mm wide white label.'), stateLine(function() {
+  }), swatchHead('Base text'), row('Left text', mkTxt('base.leftText', 'Domain or other text', function() {
+    return !S.base.custom.on;
+  }), 'Text after the square symbol. Changes show right away on both packs and in the base export. An empty field removes the text.'), row('Right text', mkTxt('base.rightText', 'Social page or other text', function() {
+    return !S.base.custom.on;
+  }), 'The text is right-aligned. Its edge stays put when the text length changes. An empty field removes the text.'), row('Text size', mkScrub('base.textSize', 1.5, 5, .1, 'mm', function() {
+    return !S.base.custom.on;
+  }), 'One size for both captions. Long lines shrink together so they never collide; the actual type size is shown below.'), row('After symbol', mkScrub('base.textGap', 0, 16, .1, 'mm', function() {
+    return !S.base.custom.on;
+  }), 'Gap from the right edge of the square symbol to the start of the left text.'), row('From right edge', mkScrub('base.textInset', 2, 24, .1, 'mm'), 'Inset of the right-hand text from the edge of the base. By default it matches the right edge of the 105 mm wide white label.', function() {
+    return !S.base.custom.on;
+  }), stateLine(function() {
     var f = baseFooterLayout();
     return f.size < f.requested - .01 ? 'Text reduced to ' + f.size.toFixed(2) + ' mm' + (f.size < 1.8 ? ' · shorten the text for legibility' : '') : 'Shared baseline · size ' + f.size.toFixed(2) + ' mm';
   }), foldHint('Text updates on both packs. The base vector with your changes downloads on the right, in the «Brand» section.') ]));
+  var customOn = function() {
+    return !!S.base.custom.on;
+  };
+  var roundCut = function() {
+    return !!S.base.custom.on && (S.base.custom.cut === 'round' || !BASE.fileCut);
+  };
+  g.appendChild(group('Base', S.base.custom.on ? 'your artwork' : 'placeholder', [ foldHint('Load the SVG of your printed base. The label is placed only inside the <b>free field</b>, and the base export uses your artwork, the cut line and the bleed set here. Outline text in the file before loading: fonts in it are not embedded. A path, rect or circle whose id contains <b>cut</b>, <b>die</b> or <b>contour</b> is taken as the cut line and is not printed.'), row('Base file', function() {
+    var d = document.createElement('div');
+    d.className = 'seg';
+    var inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.svg,image/svg+xml';
+    inp.hidden = true;
+    inp.onchange = function() {
+      readText(inp, function(text, name) {
+        if (!baseSvgClean(text)) {
+          toast('Not a usable SVG: it needs a viewBox or a width and height');
+          return;
+        }
+        var c = S.base.custom, f = baseSvgClean(text);
+        c.svg = text;
+        c.name = name;
+        c.on = 1;
+        c.cut = f.cut ? 'file' : 'round';
+        var cu = f.cut ? f.cut.box : [ f.vb[0], f.vb[1], f.vb[0] + f.vb[2], f.vb[1] + f.vb[3] ];
+        if (f.wMM) c.w = Math.round(f.wMM * (cu[2] - cu[0]) / f.vb[2] * 10) / 10;
+        var h = c.w * (cu[3] - cu[1]) / (cu[2] - cu[0]);
+        c.field = {
+          x: Math.round(c.w * .08 * 10) / 10,
+          y: Math.round(h * .4 * 10) / 10,
+          w: Math.round(c.w * .84 * 10) / 10,
+          h: Math.round(h * .45 * 10) / 10
+        };
+        buildPanel();
+        apply('base.custom.svg');
+        toast('Base loaded · ' + c.w.toFixed(1) + ' × ' + h.toFixed(1) + ' mm · cut line ' + (f.cut ? 'from the file' : 'rounded rectangle') + ': set the free field below');
+      });
+    };
+    var load = document.createElement('button');
+    load.textContent = 'Load SVG';
+    load.onclick = function() {
+      inp.click();
+    };
+    var stub = document.createElement('button');
+    stub.textContent = 'Placeholder';
+    stub.onclick = function() {
+      S.base.custom.on = 0;
+      buildPanel();
+      apply('base.custom.on');
+    };
+    stub.classList.toggle('on', !S.base.custom.on);
+    load.classList.toggle('on', !!S.base.custom.on);
+    d.appendChild(load);
+    d.appendChild(stub);
+    d.appendChild(inp);
+    return d;
+  }(), 'SVG of the printed base. Nothing leaves your computer: the file is read here and kept with the lot'), stateLine(function() {
+    var c = S.base.custom;
+    return c.on ? c.name + ' · ' + BASE.vb[0].toFixed(1) + ' × ' + BASE.vb[1].toFixed(1) + ' mm · cut ' + (c.cut === 'file' && BASE.fileCut ? 'from file' : 'rounded rectangle') + (BASE.text ? ' · live text in the file: outline it' : '') : 'placeholder base · ' + BASE_STUB.vb[0] + ' units, fixed geometry';
+  }), row('Width', mkScrub('base.custom.w', 30, 250, .5, 'mm'), 'Trim width of the base: the width of the cut line. The height follows the proportions of the file', customOn), row('Cut line', mkSeg('base.custom.cut', [ [ 'file', 'From file' ], [ 'round', 'Rounded rectangle' ] ]), 'From file: the shape whose id contains cut, die or contour. Rounded rectangle: the bounds of the artwork with the radius below', customOn), row('Corner radius', mkScrub('base.custom.radius', 0, 30, .5, 'mm'), null, roundCut), row('Bleed', mkScrub('base.custom.bleed', 0, 6, .5, 'mm'), 'How far the bleed goes past the cut line. Print shops usually ask for 2 mm', customOn), row('Bleed color', mkTxt('base.custom.bleedColor', '#ffffff'), 'Color that fills the bleed under the artwork, as #RRGGBB. Artwork that already runs past the cut line covers it', customOn), swatchHead('Free field for the label'), row('Left', mkScrub('base.custom.field.x', 0, 200, .5, 'mm'), 'From the left edge of the trim to the free field', customOn), row('Top', mkScrub('base.custom.field.y', 0, 300, .5, 'mm'), 'From the top edge of the trim to the free field', customOn), row('Width', mkScrub('base.custom.field.w', 1, 250, .5, 'mm'), null, customOn), row('Height', mkScrub('base.custom.field.h', 1, 300, .5, 'mm'), null, customOn) ]));
   if (studio()) g.appendChild(group('Size & spacing', 'label type size and margins', [ swatchHead('Text size'), mkAct('Larger text · one step', function() {
     typeStepAll(+1);
   }, true), mkAct('Smaller text · one step', function() {
