@@ -8955,7 +8955,9 @@ function buildPanel() {
     var host = ae.closest('[data-path]');
     if (host) focusPath = host.dataset.path;
   }
-  SYNCS.length = 0;
+  SYNCS = SYNCS.filter(function(f) {
+    return f._out;
+  });
   PARAMS = {};
   ROWS.length = 0;
   tipHide();
@@ -9470,6 +9472,10 @@ function buildOut() {
   var acceptance = $('#notes');
   g.innerHTML = '';
   EXPORTS.length = 0;
+  SYNCS = SYNCS.filter(function(f) {
+    return !f._out;
+  });
+  var syncFrom = SYNCS.length;
   if (acceptance) g.appendChild(acceptance);
   var lb = isLabel();
   var st = stockById(S.label.preset), roll = !st.sheet;
@@ -9539,6 +9545,9 @@ function buildOut() {
     apply('size');
     toast('Started fresh');
   }), foldHint('Lot data saves itself: close the file and everything is in place next time you open it. The config is for handing a batch to someone else or rolling back to a previous one.') ]));
+  SYNCS.slice(syncFrom).forEach(function(f) {
+    f._out = 1;
+  });
   paintAll();
   refreshEnabled();
 }
