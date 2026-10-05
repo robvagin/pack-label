@@ -374,7 +374,7 @@ legend .tipi{color:var(--dim2)}
 #toast button{margin-left:8px;background:var(--acc);border:0;color:#fff;border-radius:999px;padding:3px 10px;
   font:var(--fz-m) var(--ui);cursor:pointer}
 
-#stage.drag::after{content:"The mark is built into the base: files are not accepted here";position:absolute;inset:40px 0 40px;
+#stage.drag::after{content:"Drop a base SVG or a config JSON";position:absolute;inset:40px 0 40px;
   display:flex;align-items:center;justify-content:center;background:rgba(25,111,100,.08);
   border:2px dashed var(--acc);color:var(--acc-tx);font-size:12px;z-index:8}
 
@@ -10209,8 +10209,15 @@ function syncTypeScale() {
   st.addEventListener('drop', function(e) {
     var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
     if (!f) return;
-    void f;
-    toast('Text: in the «Pack» section; files: on the right, in the «Brand» section');
+    var picker = /\.svg$/i.test(f.name) || f.type === 'image/svg+xml' ? $('#groups fieldset input[type=file]') : /\.json$/i.test(f.name) || f.type === 'application/json' ? $('#fileCfg') : null;
+    if (!picker) {
+      toast('Drop a base SVG or a config JSON');
+      return;
+    }
+    var dt = new DataTransfer();
+    dt.items.add(f);
+    picker.files = dt.files;
+    picker.dispatchEvent(new Event('change'));
   });
 })();
 
