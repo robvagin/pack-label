@@ -9871,6 +9871,25 @@ var API = {
         dot: +THERMAL.dot.toFixed(4),
         ladder: LADDER.slice(0, 8)
       },
+      law: {
+        profile: lawUA() ? 'eu_ua' : 'eu',
+        profiles: [ 'eu', 'eu_ua' ],
+        basis: Object.keys(LAW_BASIS).reduce(function(o, k) {
+          o[k] = lawBasis(k);
+          return o;
+        }, {})
+      },
+      base: {
+        custom: !!BASE.custom,
+        w: +baseGeom().w.toFixed(2),
+        h: +baseGeom().h.toFixed(2),
+        field: {
+          x: +baseGeom().x0.toFixed(2),
+          y: +baseGeom().fieldTop.toFixed(2),
+          w: +baseGeom().bodyW.toFixed(2),
+          h: +baseGeom().fieldH.toFixed(2)
+        }
+      },
       processes: UA_PROCESS,
       roasts: UA_ROAST,
       descriptors: UA_DESCRIPTORS
