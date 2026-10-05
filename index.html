@@ -2520,7 +2520,7 @@ function dateProblems() {
     what: 'best before is not a valid date',
     value: rawB
   });
-  if (r && b && b.key <= r.key) out.push({
+  if (r && b && (b.d === null ? b.key + new Date(b.y, b.m, 0).getDate() : b.key) <= r.key) out.push({
     what: 'best before is not later than roast date',
     roast: rawR,
     best: rawB
