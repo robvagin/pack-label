@@ -8454,6 +8454,26 @@ function bitmapRows(cv) {
   };
 }
 
+var HEAD_DOTS = 832;
+
+function fitHead(bm) {
+  if (bm.w <= HEAD_DOTS) return bm;
+  var bpr = HEAD_DOTS / 8, x, y;
+  for (y = 0; y < bm.h; y++) for (x = bpr; x < bm.bpr; x++) if (bm.rows[y * bm.bpr + x]) {
+    bm.clipped = true;
+    return bm;
+  }
+  var out = new Uint8Array(bpr * bm.h);
+  for (y = 0; y < bm.h; y++) out.set(bm.rows.subarray(y * bm.bpr, y * bm.bpr + bpr), y * bpr);
+  return {
+    rows: out,
+    bpr: bpr,
+    w: HEAD_DOTS,
+    h: bm.h,
+    trimmed: bm.w - HEAD_DOTS
+  };
+}
+
 function hex2(n) {
   return ('0' + n.toString(16).toUpperCase()).slice(-2);
 }
@@ -8468,7 +8488,7 @@ function tsplDoc(bm, ppi) {
   var mm = function(px) {
     return (px / ppi * 25.4).toFixed(1);
   };
-  var head = 'SIZE ' + mm(bm.w) + ' mm,' + mm(bm.h) + ' mm\n' + 'GAP 2 mm,0 mm\n' + 'DIRECTION 1\n' + 'DENSITY ' + (S.info.mode === 'direct' ? 12 : 8) + '\n' + 'SPEED 4\n' + 'CLS\n' + 'BITMAP 0,0,' + bm.bpr + ',' + bm.h + ',0,';
+  var head = 'SIZE ' + (bm.trimmed ? (+S.size.w).toFixed(1) : mm(bm.w)) + ' mm,' + mm(bm.h) + ' mm\n' + 'GAP 2 mm,0 mm\n' + 'DIRECTION 1\n' + 'DENSITY ' + (S.info.mode === 'direct' ? 12 : 8) + '\n' + 'SPEED 4\n' + 'CLS\n' + 'BITMAP 0,0,' + bm.bpr + ',' + bm.h + ',0,';
   return {
     head: head,
     body: bm.rows.map(function(v) {
@@ -8484,7 +8504,8 @@ function expPrinter(kind) {
       toast('Could not rasterize');
       return;
     }
-    var bm = bitmapRows(cv);
+    var bm = fitHead(bitmapRows(cv));
+    if (bm.clipped) toast('Wider than a 4″ head (' + HEAD_DOTS + ' dots) with ink near the right edge: the printer will cut it off');
     if (kind === 'zpl') {
       dl(baseName() + '.zpl', zplDoc(bm, 203), 'text/plain');
       toast('ZPL · ' + bm.w + '×' + bm.h + ' dots. To the printer: cat file > /dev/usb/lp0');
