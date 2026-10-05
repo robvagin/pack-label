@@ -9684,6 +9684,29 @@ function checkData() {
     min: LAW.xHeightMin,
     basis: lawBasis('xheight')
   });
+  if (S.info && S.info.emark && S.blocks.weight && S.blocks.weight.on && Lot.weight) {
+    var qs = qtySize(L);
+    if (qs < qtyFloor() - .01) problems.push({
+      kind: 'law',
+      what: 'net quantity digits below the ℮ minimum height',
+      value: +(qs * figRatio()).toFixed(2),
+      min: +(qtyFloor() * figRatio()).toFixed(2),
+      basis: lawBasis('emark')
+    });
+    if (qs * emkRatio() < 3 - .005) problems.push({
+      kind: 'law',
+      what: '℮ mark below 3 mm',
+      value: +(qs * emkRatio()).toFixed(2),
+      min: 3,
+      basis: lawBasis('emark')
+    });
+  }
+  var cv = capLegalViolations(L);
+  if (cv.length) problems.push({
+    kind: 'law',
+    what: 'required items set in small caps below the legal x-height: ' + cv.join(', '),
+    basis: lawBasis('xheight')
+  });
   if (th.mm < strokeFloor() - .005) problems.push({
     kind: 'print',
     what: 'stroke thinner than limit',
