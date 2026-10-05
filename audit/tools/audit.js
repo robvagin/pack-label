@@ -55,12 +55,32 @@ const PASS_STATE = { blocks: { note: { on: 0 }, site: { on: 0 }, method: { on: 0
   const png = fc.png(files['PNG 203 ppi · thermal printer']), zpl = fc.zpl(files['ZPL · straight to the printer']), tspl = fc.tspl(files['TSPL · straight to the printer']);
   const lsvg = fc.svg(files['Label SVG · separate Cut layer']), asvg = fc.svg(files['SVG for a laser printer']), bsvg = fc.svg(files['Download base for print · SVG']);
   add('X-png', png.w === 839 && png.h === 296 && png.levels === 2, 'PNG 203: 839×296 dots for 105×37 mm, 1-bit', png.w + '×' + png.h + ' levels ' + png.levels);
-  add('X-zpl', zpl.ok && zpl.pw === 839 && zpl.ll === 296, 'ZPL ^GFA: byte count, bytes per row and rows match ^PW/^LL', JSON.stringify({ bytes: zpl.bytes, bpr: zpl.bpr, why: zpl.why }));
-  add('X-tspl', tspl.ok && tspl.bpr === 105 && tspl.h === 296, 'TSPL BITMAP: data length = bpr × height', JSON.stringify(tspl.size));
+  add('X-zpl', zpl.ok && zpl.ll === 296, 'ZPL ^GFA: byte count, bytes per row and rows match ^PW/^LL', JSON.stringify({ pw: zpl.pw, bytes: zpl.bytes, bpr: zpl.bpr, why: zpl.why }));
+  add('X-tspl', tspl.ok && tspl.h === 296 && tspl.size[0] === '105.0', 'TSPL BITMAP: data length = bpr × height, SIZE is the real media', JSON.stringify(tspl.size));
+  add('P-19', zpl.pw <= 832 && tspl.bpr <= 104, 'printer bitmaps fit a 4-inch 203 dpi head (832 dots)', 'ZPL ^PW' + zpl.pw + ' · TSPL ' + tspl.bpr + ' bytes/row');
   add('P-09', Math.abs(tspl.oneShare - (1 - zpl.blackShare)) < 1e-3, 'TSPL bits are the inverse of ZPL (0 = printed dot)', 'TSPL ones ' + tspl.oneShare + ' · ZPL black ' + zpl.blackShare);
   add('X-svg', lsvg.ok && asvg.ok && lsvg.cut && lsvg.cmyk > 0, 'label and A4 SVG: XML ok, fonts embedded, Cut layer, device-cmyk', [lsvg.why, asvg.why].join(' '));
   add('P-10', bsvg.ok && bsvg.cmyk > 0, 'base print SVG carries device-cmyk', 'device-cmyk count ' + bsvg.cmyk);
   add('P-11', png.pHYs && Math.round(png.pHYs.x * .0254) === 203, 'PNG declares 203 ppi in pHYs', JSON.stringify(png.pHYs));
+  // P-21..P-26
+  const late = await o.page.evaluate(() => {
+    const P = window.PACKLABEL, A = P.api, S = P.S, out = {};
+    S.lot.date = '11.08.26'; S.lot.bestDate = '08.26'; S.lot.bestPrec = 'day';
+    out.p23 = P.dateProblems().some(d => /not later/.test(d.what));
+    S.lot.bestDate = '11.08.27';
+    out.p25 = document.documentElement.lang;
+    const d = A.describe(); out.p26 = !!(d.law && d.base);
+    const keep = window.qtySize; window.qtySize = () => 3; S.info.emark = 1; out.p24 = A.check().problems.some(p => /℮ mark below 3 mm/.test(p.what)); window.qtySize = keep; S.info.emark = 0;
+    P.buildPanel(); S.info.mode = 'direct'; P.apply('lot.name'); return out;
+  });
+  await o.page.waitForTimeout(300);
+  late.p21 = await o.page.evaluate(() => [...document.querySelectorAll('#out .st')].map(e => e.textContent).some(t => /direct, higher darkness/.test(t)));
+  await o.page.evaluate(() => { window.PACKLABEL.S.info.mode = 'transfer'; window.PACKLABEL.apply('info.mode'); });
+  add('P-21', late.p21, 'right-panel status lines update after a left-panel rebuild');
+  add('P-23', !late.p23, 'best before "08.26" is not flagged earlier than roast 11.08.26');
+  add('P-24', late.p24, '℮ mark below 3 mm is a legal problem (negative control: forced 3 mm net size)');
+  add('P-25', late.p25 === 'en', 'page language matches the English interface', late.p25);
+  add('P-26', late.p26, 'api.describe() reports law profile and base geometry');
   // P-14
   o.errors.length = 0;
   await o.page.click('#segUik button[data-uik="1.15"]');
@@ -88,6 +108,10 @@ const PASS_STATE = { blocks: { note: { on: 0 }, site: { on: 0 }, method: { on: 0
   // P-16 narrow window: export panel reachable
   o = await open({ file, viewport: { width: 1024, height: 768 } });
   const n = await o.page.evaluate(() => { const b = [...document.querySelectorAll('#out button.act')].find(b => /PNG 203/.test(b.textContent)); b.scrollIntoView(); const r = b.getBoundingClientRect(); return { top: Math.round(r.top), vh: innerHeight, panelH: Math.round(document.querySelector('#panel').getBoundingClientRect().height) }; });
+  await o.page.setViewportSize({ width: 390, height: 844 });
+  await o.page.waitForTimeout(300);
+  const m = await o.page.evaluate(() => Math.round(document.querySelector('#stage').getBoundingClientRect().width));
+  add('P-18', m >= 380, 'at 390 px the stage gets the full width', m + ' px');
   add('P-16', n.top >= 0 && n.top < n.vh && n.panelH <= n.vh, 'at 1024 px the export buttons scroll into view, panel fits the viewport', JSON.stringify(n));
   await o.browser.close();
 
