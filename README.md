@@ -67,13 +67,14 @@ Take it if you want it.
 
 - [GONE](https://github.com/robvagin/gone-player) · a macOS player for the thirty minutes before a DJ set
 - [PSP Engine](https://github.com/robvagin/shar-psp-engine) · a native engine that runs a PS2 game on the PSP. Not an emulator
+- [PSP Menu Art](https://github.com/robvagin/psp-game-preview-crop) · menu artwork for a PSP game: crop, see it on the XMB, convert video and sound
 - [Particle Dance](https://github.com/robvagin/particle-dance) · particles that dance along patterns and 3D forms
 - [XYZ Cube](https://github.com/robvagin/xyz-cube) · your data as points in a 3D cube on axes you name
 - [Image Shuffler](https://github.com/robvagin/image-shuffler) · your screenshots flying in 3D, recorded as a video
 - [Sunburst](https://github.com/robvagin/sunburst) · a hierarchy as a 3D sunburst chart with height
 - [Halftone Cloud](https://github.com/robvagin/halftone-cloud) · images rebuilt as a halftone of flying shapes
 - [Motion Primer](https://github.com/robvagin/motion-primer) · bodies that swarm, orbit, fall and gather into a word
-- [Murmur](https://github.com/robvagin/murmur-vj) · a VJ visualizer: circles, triangles and squares that move to your music
+- [Musevis](https://github.com/robvagin/musevis) · a music visualizer: shapes that dance to your sound, live
 - [Particles 3D](https://github.com/robvagin/particles-3d) · a WebGL2 cloud of up to 300,000 particles
 - [Thinking Sphere](https://github.com/robvagin/thinking-sphere) · a glass sphere with soft shapes drifting inside
 - [Line Engine](https://github.com/robvagin/line-engine) · engraved line patterns in motion: Lissajous, rosettes, waves
