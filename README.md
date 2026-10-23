@@ -68,7 +68,9 @@ Take it if you want it.
 - [GONE](https://github.com/robvagin/gone-player) · a macOS player for the thirty minutes before a DJ set
 - [PSP Engine](https://github.com/robvagin/shar-psp-engine) · a native engine that runs a PS2 game on the PSP. Not an emulator
 - [PSP Menu Art](https://github.com/robvagin/psp-game-preview-crop) · menu artwork for a PSP game: crop, see it on the XMB, convert video and sound
+- [Bro Gamepad](https://github.com/robvagin/bro-gamepad) · a PS4 controller as an effects pad for Bitwig Studio
 - [Particle Dance](https://github.com/robvagin/particle-dance) · particles that dance along patterns and 3D forms
+- [Layer Type](https://github.com/robvagin/layer-type) · three letters, one 3D body: each side reads a different letter
 - [XYZ Cube](https://github.com/robvagin/xyz-cube) · your data as points in a 3D cube on axes you name
 - [Image Shuffler](https://github.com/robvagin/image-shuffler) · your screenshots flying in 3D, recorded as a video
 - [Sunburst](https://github.com/robvagin/sunburst) · a hierarchy as a 3D sunburst chart with height
